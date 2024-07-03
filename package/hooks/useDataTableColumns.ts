@@ -39,30 +39,41 @@ export const useDataTableColumns = <T>({
 }) => {
   // align order
   function alignColumnsOrder<T>(columnsOrder: string[], columns: DataTableColumn<T>[]) {
+    const columnsOrderSet = new Set(columnsOrder);
     const updatedColumnsOrder: string[] = [];
-    columnsOrder.forEach((col) => {
-      if (columns.find((c) => c.accessor === col)) {
+
+    for (const col of columnsOrder) {
+      if (columns.some((c) => c.accessor === col)) {
         updatedColumnsOrder.push(col);
       }
-    });
-    columns.forEach((col) => {
-      if (!updatedColumnsOrder.includes(col.accessor as string)) {
+    }
+
+    for (const col of columns) {
+      if (!columnsOrderSet.has(col.accessor as string)) {
         updatedColumnsOrder.push(col.accessor as string);
       }
-    });
+    }
+
     return updatedColumnsOrder;
   }
 
   // align toggle
-  function alignColumnsToggle<T>(columnsToggle: DataTableColumnToggle[], columns: DataTableColumn<T>[]) {
+  function alignColumnsToggle<T>(
+    columnsToggle: DataTableColumnToggle[],
+    columns: DataTableColumn<T>[]
+  ): DataTableColumnToggle[] {
+    const columnsAccessorSet = new Set(columns.map((col) => col.accessor as string));
+    const columnsToggleMap = new Map(columnsToggle.map((col) => [col.accessor, col]));
     const updatedColumnsToggle: DataTableColumnToggle[] = [];
-    columnsToggle.forEach((col) => {
-      if (columns.find((c) => c.accessor === col.accessor)) {
+
+    for (const col of columnsToggle) {
+      if (columnsAccessorSet.has(col.accessor)) {
         updatedColumnsToggle.push(col);
       }
-    });
-    columns.forEach((col) => {
-      if (!updatedColumnsToggle.find((c) => c.accessor === col.accessor)) {
+    }
+
+    for (const col of columns) {
+      if (!columnsToggleMap.has(col.accessor as string)) {
         updatedColumnsToggle.push({
           accessor: col.accessor as string,
           defaultToggle: col.defaultToggle || true,
@@ -70,29 +81,35 @@ export const useDataTableColumns = <T>({
           toggled: col.defaultToggle === undefined ? true : col.defaultToggle,
         });
       }
-    });
-    return updatedColumnsToggle as DataTableColumnToggle[];
+    }
+
+    return updatedColumnsToggle;
   }
 
   // align width
-  function alignColumnsWidth<T>(columnsWidth: DataTableColumnWidth[], columns: DataTableColumn<T>[]) {
+  function alignColumnsWidth<T>(
+    columnsWidth: DataTableColumnWidth[],
+    columns: DataTableColumn<T>[]
+  ): DataTableColumnWidth[] {
+    const columnsAccessorSet = new Set(columns.map((col) => col.accessor as string));
+    const columnsWidthMap = new Map(columnsWidth.map((col) => [Object.keys(col)[0], col]));
     const updatedColumnsWidth: DataTableColumnWidth[] = [];
 
-    columnsWidth.forEach((col) => {
+    for (const col of columnsWidth) {
       const accessor = Object.keys(col)[0];
-      if (columns.find((c) => c.accessor === accessor)) {
+      if (columnsAccessorSet.has(accessor)) {
         updatedColumnsWidth.push(col);
       }
-    });
+    }
 
-    columns.forEach((col) => {
-      const accessor = col.accessor;
-      if (!updatedColumnsWidth.find((c) => Object.keys(c)[0] === accessor)) {
+    for (const col of columns) {
+      const accessor = col.accessor as string;
+      if (!columnsWidthMap.has(accessor)) {
         const widthObj: DataTableColumnWidth = {};
-        widthObj[accessor as string] = '';
+        widthObj[accessor] = '';
         updatedColumnsWidth.push(widthObj);
       }
-    });
+    }
 
     return updatedColumnsWidth;
   }
@@ -228,7 +245,7 @@ export const useDataTableColumns = <T>({
     }
 
     const result = columnsOrder
-      .map((order) => columns.find((column) => column.accessor === order))
+      .map((order: string) => columns.find((column) => column.accessor === order))
       .map((column) => {
         return {
           ...column,
@@ -251,7 +268,7 @@ export const useDataTableColumns = <T>({
   }, [columns, columnsOrder, columnsToggle, columnsWidth]);
 
   const setColumnWidth = (accessor: string, width: string | number) => {
-    const newColumnsWidth = columnsWidth.map((column) => {
+    const newColumnsWidth = columnsWidth.map((column: Record<string, any>) => {
       if (!column[accessor]) {
         return column;
       }
